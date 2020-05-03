@@ -1,13 +1,17 @@
 // Snakes and Ladders.cpp : This file contains the 'main' function. Program execution begins and ends there.
 //
 //TO-DO
-//Make dice roll random each time
-//make snakes link start and end
-//change the move to it goes to start of snake if lands on it
+//User Input for board size, num snakes, and num ladders
+//Make a 2 player game
+	//Move only when player button is pressed
+	//change occupance to p1 p2 p3 etc instead of x, if o leave blank
+	//change "win" statement for whoever has won
+//Look into making template for snakes and ladders since basically exactly the same
 
-//add variables for :
-// snake length
-// where snakes start
+//SNAKE START = MOUTH
+//SNAKE END = TAIL
+//LADDER START = BOTTON
+//LADDER END = TOP
 
 #include <iostream>
 #include <ctime>
@@ -17,6 +21,7 @@
 using namespace std;
 
 int snake_length = 5;
+int ladder_length = 7;
 
 //global function to roll dice and return random number between 1 and 6
 int roll_dice() {
@@ -59,14 +64,26 @@ public:
 	~snake() {};
 
 	int get_snake_start() { return snake_start; };
-	int get_snake_send() { return snake_end; };
+	int get_snake_end() { return snake_end; };
 };
 
 //ladder is a type of tile with a start and end point
 class ladder :tile {
 protected:
+	int number;
 	int ladder_start;
 	int ladder_end;
+	string occupied;
+	string type;
+public:
+	ladder() = default;
+	ladder(int ladder_start_, int ladder_end_) :
+		number{ ladder_start_ }, ladder_start(ladder_start_), ladder_end{ ladder_end_ }, occupied{ "o" }, type{ "ladder" }{};
+	~ladder() {};
+
+	int get_ladder_start() { return ladder_start; };
+	int get_ladder_end() { return ladder_end; };
+
 };
 
 //board is an array of tiles of size 25 (5x5) to start
@@ -93,18 +110,29 @@ public:
 		//tiles[16].set_type("snake");
 		//tiles[17].set_type("snake");
 		tiles[22].set_type("snake");
+		tiles[10].set_type("ladder");
+		tiles[30].set_type("ladder");
 		
-		//UNCOMMENT AND FIX FOR ADDING SNAKE TILES TO BOARD
-		/*
+		//UNCOMMENT AND FIX FOR ADDING SNAKE AND LADDER TILES TO BOARD
+		
 		for (int i{}; i < size; i++) {
 			if (tiles[i].get_type() == "snake") {
 				tiles[i] = snake(i+1, i+1 - snake_length);
 				tiles[i].set_number(i+1);
+				tiles[i].set_occupance("o");
+				tiles[i].set_type("snake");
 				cout << "snake from " << i+1 << " to " << i+1 - snake_length << endl;
+			}
+			else if (tiles[i].get_type() == "ladder") {
+				tiles[i] = snake(i + 1, i + 1 + ladder_length);
+				tiles[i].set_number(i + 1);
+				tiles[i].set_occupance("o");
+				tiles[i].set_type("ladder");
+				cout << "ladder from " << i + 1 << " to " << i + 1 + ladder_length << endl;
 			}
 
 		}
-		*/
+
 
 		//the start tile is occupied
 		occupance(0, "x");
@@ -143,6 +171,9 @@ void board::display() {
 				if (get_type(tile_number) == "snake") {
 					cout << "S " << " " << tiles[tile_number - 1].get_occupied() << " ";
 				}
+				else if (get_type(tile_number) == "ladder") {
+					cout << "L " << " " << tiles[tile_number - 1].get_occupied() << " ";
+				}
 				else {
 					cout << tiles[tile_number - 1].get_number() << " " << tiles[tile_number - 1].get_occupied() << " ";
 				}
@@ -153,6 +184,9 @@ void board::display() {
 				if (tile_number < 10) { cout << " "; };
 				if (get_type(tile_number) == "snake") {
 					cout << "S " << " " << tiles[tile_number - 1].get_occupied() << " ";
+				}
+				else if (get_type(tile_number) == "ladder") {
+					cout << "L " << " " << tiles[tile_number - 1].get_occupied() << " ";
 				}
 				else {
 					cout << tiles[tile_number - 1].get_number() << " " << tiles[tile_number - 1].get_occupied() << " ";
@@ -217,8 +251,8 @@ public:
 	int get_position() { return position; }
 
 	void move(board& b);
-	void snake_move(board& b);
-	void ladder_move(board& b);
+	void snake_move(board& b, snake& s);
+	void ladder_move(board& b, ladder& l);
 };
 
 void player::move(board& b) {
@@ -233,41 +267,49 @@ void player::move(board& b) {
 	string tile_type = b.get_type(get_position());
 
 	//if a normal tile, move to that
-	if (tile_type == "normal") {
-		//cout << "normal tile" << endl;
-		set_position(move_number + get_position());
-		//set occupance of new tile to closed
-		b.occupance(get_position() - 1, "x");
-	}
-	
-	//if a snake tile, move to start of snake 
-	//(could have landed on start of snake, doesn't matter)
-	else if (tile_type == "snake") {
-		//cout << "landed on snake" << endl;
-		set_position(move_number + get_position());
-		//set occupance of new tile to closed
-		b.occupance(get_position() - 1, "x");
-	}
+	//cout << "normal tile" << endl;
+	set_position(move_number + get_position());
+	//set occupance of new tile to closed
+	b.occupance(get_position() - 1, "x");
 
 }
 
-void player::snake_move(board& b) {
+void player::snake_move(board& b, snake& s) {
 
 	//get start position of snake
+	int start = s.get_snake_start();
+	int end = s.get_snake_end();
 
-	//if at start of snake, do nothing
-
-	//if at end of snake, move to start
+	//set occupance of original tile to open
+	b.occupance(get_position() - 1, "o");
 
 	//change occupance accordingly
+	set_position(end);
+
+	//set occupance of new tile to closed
+	b.occupance(get_position() - 1, "x");
+	
+	cout << "Landed on a snake! Go from " << s.get_snake_start() << " to " << s.get_snake_end() << endl;
+	b.display();
 
 }
 
-void player::ladder_move(board& b) {
-	//get end position of ladder
+void player::ladder_move(board& b, ladder& l) {
+	//get start position of snake
+	int start = l.get_ladder_start();
+	int end = l.get_ladder_end();
 
+	//set occupance of original tile to open
+	b.occupance(get_position() - 1, "o");
 
-	//change occupancy accordingly
+	//change occupance accordingly
+	set_position(end);
+
+	//set occupance of new tile to closed
+	b.occupance(get_position() - 1, "x");
+
+	cout << "Landed on a ladder! Go from " << l.get_ladder_start() << " to " << l.get_ladder_end() << endl;
+	b.display();
 }
 
 int main()
@@ -287,10 +329,29 @@ int main()
 		player1.move(gameboard);
 		gameboard.display();
 		cout << player1.get_name() << " is at square " << player1.get_position() << " a " << gameboard.get_type(player1.get_position()) << " tile" << endl;
+
+		//if on a snake tile, go to start of snake
+		if (gameboard.get_type(player1.get_position()) == "snake") {
+			//find which snake has been landed on
+			int snake_start = player1.get_position();
+			snake s1 = snake(player1.get_position(), (player1.get_position() - snake_length));
+			//snake_move for that snake
+			player1.snake_move(gameboard, s1);
+		}
+
+		else if (gameboard.get_type(player1.get_position()) == "ladder") {
+			//find which snake has been landed on
+			int ladder_start = player1.get_position();
+			ladder l1 = ladder(player1.get_position(), (player1.get_position() + ladder_length));
+			//snake_move for that snake
+			player1.ladder_move(gameboard, l1);
+		}
+		cout << endl;
+		cout << endl;
+
 	};
 
 
-	cout << player1.get_name() << " is at square " << player1.get_position() << endl;
 	cout << player1.get_name() << " won!" << endl;
 
 	return 0;
